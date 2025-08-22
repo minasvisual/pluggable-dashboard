@@ -1,6 +1,5 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
-import Router from './router'
 import { get } from 'lodash'
 import { request, getUserData, getAuthHeaders } from './services/models'
 import { getLocalStorage } from './services/helpers'
@@ -74,7 +73,7 @@ const actions = {
         let token =  get(data, process.env.VUE_APP_LOGIN_TOKEN_PATH, 'access_token' )
         localStorage.setItem('dash_session', token)
         ctx.commit('setAuth', ['dash', { isLogged: true, token }])
-        Router.push('/dashboard')
+        // A navegação será tratada pelo componente Login
       }).catch( err => {
         alert('Login Error: '+ err.message)
       })
@@ -91,7 +90,7 @@ const actions = {
       return getUserData({ method: 'get', ...headers })
           .then( data => {
               ctx.commit('setAuth', ['dash', {isLogged: true, token, user: data }])
-              if( !window.location.includes('dashboard') ) Router.push('/dashboard')
+              // A navegação será tratada pelo componente Login
               return data
           })
           .catch(({response, message }) => {
@@ -115,7 +114,7 @@ const actions = {
         localStorage.removeItem('dash_session')
     }
     ctx.commit('setAuth', ['dash', auth]) 
-    Router.push('/pages/login')
+    // A navegação será tratada pelo componente Login
   },
   requestFail(ctx, { response }){
     let current = ctx.state.currentProject || {}

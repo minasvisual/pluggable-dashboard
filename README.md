@@ -1,174 +1,139 @@
-![Screenshot](logo.png)
+# Pluggable Dashboard
 
-# Under Construction. Collaborate!
+Um dashboard plugável e conectável às suas APIs, construído com Vue 2.7 e CoreUI.
 
-## Plugable Dashboard Api
+## Requisitos
 
-#### Roadmap
- - https://github.com/minasvisual/pluggable-dashboard/issues/1
+- Node.js >= 18.0.0
+- Yarn >= 1.22.0
 
-## SECURITY ALERT
+## Instalação
 
-Don't use this dashboard online, or if you use, protect folder by password access. Pluggable dashboard its designed to use with ElectronJS, locally and safe from  web attacks.
-
-## DEMO (no login required)
- - https://pluggable-dashboard.vercel.app/
-
-### Installation
-
-#### Clone repo
-
-``` bash
-# clone the repo
-
-# go into app's directory
-
-# install app's dependencies
-$ npm install
+1. Clone o repositório:
+```bash
+git clone <repository-url>
+cd pluggable-dashboard
 ```
 
-#### Dashboard Config
-
-To configure dashboard fill the .env and build vue (You can clone .env.example to .env)
-```
-VUE_APP_ENV=local
-VUE_APP_DATABASE=/models/projects.json			// Projects json file path/url | default /public/models/projects.json
-
-VUE_APP_LOGIN=true  | true/false
-// Required if login true
-VUE_APP_LOGIN_URL=https://project.com/auth/login	// Dashboard Login auth url
-VUE_APP_LOGIN_USER_FIELD=email              // Username field
-VUE_APP_LOGIN_PASS_FIELD=password           // Password field
-VUE_APP_LOGIN_TOKEN_PATH=token              // Response token path in data object
-VUE_APP_LOGIN_TOKEN_HEADER=access-token			// Request token header JWT 
-VUE_APP_LOGGED_URL=https://project.com/auth/logged	// Get logged user data url
+2. Instale as dependências usando Yarn:
+```bash
+yarn install
 ```
 
-#### Usage
-
-``` bash
-# serve with hot reload at localhost:8080
-npm run serve
-
-# build for production with minification
-npm run build
-
-# run linter
-npm run lint
-
-# run unit tests
-npm run test:unit
-
-# run e2e tests
-npm run test:e2e
-
+3. Execute o projeto em modo de desenvolvimento:
+```bash
+yarn dev
 ```
 
-## Projects Api
+O projeto estará disponível em `http://localhost:3000`
 
-Project file contains tenants and schemas of apis to be consumed. Dashboard project json by default is located in /public/models/ folder.
+## Scripts Disponíveis
+
+- `yarn dev` - Inicia o servidor de desenvolvimento na porta 3000
+- `yarn serve` - Inicia o servidor de desenvolvimento na porta padrão (8080)
+- `yarn build` - Constrói o projeto para produção
+- `yarn build:prod` - Constrói o projeto para produção com otimizações
+- `yarn lint` - Executa o linter
+- `yarn test:unit` - Executa os testes unitários
+- `yarn test:e2e` - Executa os testes end-to-end
+
+## Tecnologias Utilizadas
+
+- **Vue.js 2.7** - Framework JavaScript progressivo
+- **CoreUI 4** - Biblioteca de componentes UI
+- **Vue Router 3** - Roteamento oficial do Vue
+- **Vuex 3** - Gerenciamento de estado
+- **Vue Formulate** - Sistema de formulários
+- **Axios** - Cliente HTTP
+- **Sass** - Pré-processador CSS
+
+## Estrutura do Projeto
 
 ```
-[
-  {
-	  //required | Project config
-	  "code": "modelslug",
-	  "name": "Model Label",
-	  "url": "https://project-url.com",
-	  "resources_path": "/models/",       //Base path or base URL of Json Models folder
-	  "resources": {
-		// Project crud endpoints schema
-		"users": {
-		  "resource": "users_schema.json",
-		  "label": "Users"
-		},
-		"roles":{
-		  "resource": "roles_schema.json",
-		  "label": "Roles"
-		}
-	  },
-	  // optional | Project authentication api
-	  "auth": {
-		"url_login": "https://project-url.com/api/user",	// Url of login api
-		"url_method": "post",                     // Login http method  | Default POST
-		"field_username": "user_id",              // Username field to be send | Defaut email
-		"field_secret": "access_token",           // Password/Secret field  | Default password
-		"field_remember": "remember",             // Remember field to permanent login (if exists) | Default remember
-		"response_mode": "body",                  // How to get token string | opts: body/header | Default body
-		"response_token": "token",                // Response data token location (ex: {user:{token: '...'}} means user.token) | Default 'token'
-		"request_mode": "header",                 // How to send token between requests | opts: header/query | Default header
-		"request_token": "access-token",					// Token field name | Default access-token
-		"request_token_expression": "Bearer {token}",		// Token request value expression to be interpolated | Default {token}		
-		"logged_url": "https://project-url.com/api/user",	// Url to How to get logged user data  
-		"logged_model": {                         // User response DTO
-		  "id": "_id",                            // Ex: { id: 1, fullname: 'John doe', email: 'email@email.com', level: 'admin' }
-		  "name": "fullname",
-		  "username": "email",
-		  "role": "level"
-		}
-	  },
-	}
-]
+src/
+├── assets/          # Recursos estáticos (CSS, imagens, ícones)
+├── components/      # Componentes Vue reutilizáveis
+├── containers/      # Componentes de layout
+├── libs/           # Bibliotecas e utilitários
+├── plugins/        # Plugins Vue
+├── router/         # Configuração de rotas
+├── services/       # Serviços e mixins
+├── stores/         # Configuração do Vuex
+├── views/          # Páginas e componentes de visualização
+├── App.vue         # Componente raiz
+└── main.js         # Ponto de entrada da aplicação
 ```
 
-## Basic CRUD Schema (see advanced docs running dash > docs)
+## Configuração
+
+### Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```env
+VUE_APP_API_URL=http://localhost:8080/api
+VUE_APP_TITLE=Pluggable Dashboard
 ```
-{
-  "type": "object",
-  "title": "Users",         // Schema title visible to user
-  "domain": "users",				// Schema slug visible on url
-  "properties": [
-    {                       // VueFormulate / Grid table schema
-      "name": "id",					// Data object index
-      "label": "ID"					// Visible label
-	  "config":{					// Table grid config
-		"grid": true,				// Visible in grid
-        "sort": 0					// Sort order in grid
-	  }                     // Docs link: https://vueformulate.com/guide/inputs/
-    },
-    {
-      "name": "name",
-      "label": "Name",
-      "config": {
-        "grid": true,
-      }
-    }, 
-	{
-	  "name": "bio",
-	  "label": "About me",
-	  "type": "textarea"
-	}
-  ],
-  "api": {                          // Crud endpoint config
-    "rootApi": "https://project.com/users", // Endpoint base url 
-	// Optional
-    "wrapData": "rows",						  // Response object array data field (ex: { rows: [...] } means 'rows')
-    "totalData": "count",					  // Count data field | if not exists used data.length by default
-    "pagination": {                 // Query string settings
-      "pageField": "page",					// pagination field
-      "limitField": "limit",				// Data count limit field  
-      "sortField": "order",					// Sort field
-      "sortExp": "{sort}",					// Sort expression data to be interpolated (ex: '{prop},{sort}' means 'sort=id,desc'
-      "filterField": "filter",      // Filter field
-      "filterExp": "{prop},like,%{value}%"	// Field expression value
-    },
-    "params": {                     // Fixed query string params
-      "limit": 15,
-      "ga": "123-1224"
-    },
-	"headers":{                       // Fixed headers params
-		"app-key": "qwertyuiop-asdfghjkls"
-	}
-  }
-}
-``` 
- 
-### Libs
-- Lodash
-- Moment
-- axios
-- quill
-- prismjs
-- jsoneditor
-- https://github.com/RasCarlito/axios-cache-adapter
+
+### Configuração do Vue CLI
+
+O projeto usa Vue CLI 5 com as seguintes configurações principais:
+
+- **Runtime Compiler**: Habilitado para compilação dinâmica de templates
+- **Sass**: Configurado com variáveis globais
+- **Transpilation**: Dependências CoreUI configuradas para transpilação
+
+## Desenvolvimento
+
+### Adicionando Novos Componentes
+
+1. Crie o componente em `src/components/`
+2. Importe e registre no arquivo apropriado
+3. Use o componente em seus templates
+
+### Adicionando Novas Páginas
+
+1. Crie a página em `src/views/`
+2. Adicione a rota em `src/router/index.js`
+3. Configure o menu se necessário
+
+### Estilização
+
+O projeto usa Sass com variáveis globais definidas em `src/assets/scss/_variables.scss`.
+
+## Build para Produção
+
+```bash
+yarn build
+```
+
+Os arquivos otimizados serão gerados na pasta `dist/`.
+
+## Testes
+
+### Testes Unitários
+```bash
+yarn test:unit
+```
+
+### Testes End-to-End
+```bash
+yarn test:e2e
+```
+
+## Licença
+
+MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
+
+## Contribuição
+
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
+
+## Suporte
+
+Para suporte, entre em contato através do GitHub ou abra uma issue.
   

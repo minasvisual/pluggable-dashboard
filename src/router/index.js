@@ -29,12 +29,45 @@ const Base = () => import('@/views/crud/base')
 
 Vue.use(Router)
 
-export default new Router({
+const router = new Router({
   mode: 'history', // https://router.vuejs.org/api/#mode
   linkActiveClass: 'active',
   scrollBehavior: () => ({ y: 0 }),
   routes: configRoutes()
 })
+
+// Guard de rota global para evitar navegações conflitantes
+router.beforeEach((to, from, next) => {
+  const hasAuth = process.env.VUE_APP_LOGIN === 'true'
+  const token = localStorage.getItem('dash_session')
+  const isLogged = token && hasAuth
+  
+  // Se não precisa de autenticação, permite acesso
+  if (!hasAuth) {
+    next()
+    return
+  }
+  
+  // Se precisa de autenticação mas não está logado
+  if (hasAuth && !isLogged) {
+    if (to.path.includes('/pages/')) {
+      next()
+    } else {
+      next('/pages/login')
+    }
+    return
+  }
+  
+  // Se está logado e tenta acessar páginas de login
+  if (isLogged && to.path.includes('/pages/')) {
+    next('/dashboard')
+    return
+  }
+  
+  next()
+})
+
+export default router
 
 function configRoutes () {
   return [

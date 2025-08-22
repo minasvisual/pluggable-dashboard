@@ -95,26 +95,17 @@ export default {
     hasAuth(){ return process.env.VUE_APP_LOGIN === 'true' }
   },
   mounted(){
-    if( !this.auth.isLogged && !this.$route.path.includes('pages') ) 
-        this.$router.push('/pages/login')
-    if( !this.hasAuth && this.$route.path.includes('pages') )
-        this.$router.push('/dashboard')
+    // Lógica simplificada - o guard de rota global cuida da navegação
   },
   beforeMount(){
+    // Observar mudanças no estado de autenticação
     this.$store.watch(
       state => {
         return state.auth.dash
       },
       (next={}, prev={}) => {
-        console.log(prev, next)
-        if( next ){
-            if( this.hasAuth && !next.isLogged && !this.$route.path.includes('pages') ) 
-                this.$router.push('/pages/login')
-            else if( this.hasAuth && next.isLogged && !prev.isLogged && this.$route.path.includes('pages')) 
-                this.$router.push('/dashboard')
-            else if( !this.hasAuth && this.$route.path.includes('pages') )
-                this.$router.push('/dashboard')
-        } 
+        console.log('Auth state changed:', prev, next)
+        // A navegação será tratada pelo guard de rota global
       },
       { immediate: true }
     )
