@@ -95,7 +95,7 @@
               :pages="calcPages(totals, perPage)"
               size='sm'
               align="center"
-              @update:activePage="(qr) => fetchQueryInfo('page', qr)"
+              @update:activePage="onPageChange"
             />
         </template>
       </CDataTable> 
@@ -137,11 +137,20 @@ export default {
       return has(this.schema, 'properties') ? this.schemaColumns([ ...this.schema.properties ]) : []
     },
     grid(){
-      this.perPage = get(this.resource, 'rows', []).length
-      return  get(this.resource, 'rows', [])
+      return get(this.resource, 'rows', [])
     },
     totals(){
       return get(this.resource, 'total', 0)
+    }
+  },
+  watch: {
+    resource: {
+      immediate: true,
+      handler(newVal, oldVal) {
+        const count = get(newVal, 'rows', []).length
+        const prevCount = get(oldVal, 'rows', []).length
+        if (count > prevCount) this.perPage = count
+      }
     }
   },
   methods: {
@@ -152,8 +161,12 @@ export default {
     fetchData: debounce(async function(queryInfo){
       this.queryInfo = queryInfo
       this.$emit('fetchData', queryInfo)
-    }, 1000),
-    onCreate() { 
+    }, 700),
+    onPageChange(page) {
+      this.queryInfo = { type: 'page', page }
+      this.$emit('fetchData', this.queryInfo)
+    },
+    onCreate() {
       this.$emit('actions:create', {})
     },
     onEdit(row){

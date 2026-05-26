@@ -84,7 +84,7 @@ export default {
 
         if( !token ) {
           this.loading = false;
-          return this.$emit('auth:failed', {message: 'token not found', config, data, headers})
+          return this.$emit('auth:failed', {message: 'token not found', config: this.config, data, headers})
         }
         let authRequest = this.authRequest(token)
        

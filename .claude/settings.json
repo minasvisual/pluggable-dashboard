@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"try { console.log\\(require\\('./node_modules/babel-jest/node_modules/babel-plugin-jest-hoist/package.json'\\).version\\) } catch\\(e\\) { console.log\\('not nested:', e.message\\) }\")"
+    ]
+  }
+}
