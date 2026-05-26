@@ -6,7 +6,7 @@ import Store from '../store'
 // Create `axios-cache-adapter` instance
 const api = setup({
   maxAge: 1 * ( 60 * 60 ), // N x 1 minute
-  ignoreCache: process.env.VUE_APP_ENV === 'local',
+  ignoreCache: process.env.VUE_APP_ENV === 'local', 
   clearOnStale: true,
   exclude: {
     // Only exclude PUT, PATCH and DELETE methods from cache
