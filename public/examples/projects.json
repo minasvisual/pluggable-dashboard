@@ -6,7 +6,7 @@
       "resources_path": "/examples/",
       "resources":{
         "basic":{
-          "resource":"tables/crud.json",
+          "resource":"tables/crud_dummy.json",
           "label": "CRUD Example"
         },
         "advanced":{

@@ -1,0 +1,200 @@
+{
+  "type": "object",
+  "title": "Basic",
+  "primaryKey": "id",
+  "domain": "basic",
+  "properties": [
+    {
+      "component": "h3",
+      "children": "Fake Rest API"
+    },
+    {
+      "name": "id",
+      "label": "ID",
+      "readonly": true,
+      "config": {
+        "grid": true,
+        "sort": 1
+      }
+    },
+    {
+      "name": "thumbnail",
+      "label": "Thumbnail",
+      "type": "image",
+      "config": {
+        "grid": true,
+        "sort": 1
+      }
+    },
+    {
+      "component": "div",
+      "class": "d-flex",
+      "children": [
+        {
+          "name": "title",
+          "label": "Title",
+          "config": {
+            "grid": true,
+            "sort": 1
+          },
+          "depth": 2
+        },
+        {
+          "name": "sku",
+          "label": "SKU",
+          "config": {
+            "grid": true,
+            "sort": 1
+          },
+          "depth": 2
+        },
+        {
+          "name": "brand",
+          "label": "Brand", 
+          "config": {
+            "grid": true,
+            "sort": 1
+          },
+          "depth": 2
+        },
+        {
+          "name": "category",
+          "label": "Category",
+          "type": "select",
+          "config": {
+            "grid": true,
+            "type": "action",
+            "action": {
+              "handler": "basic:save",
+              "source": "row",
+              "type": "select"
+            },
+            "filter": {
+              "type": "select",
+              "options": [
+                {
+                  "value": "male",
+                  "label": "Male"
+                },
+                {
+                  "value": "female",
+                  "label": "Female"
+                }
+              ]
+            }
+          },
+          "options": [ 
+            "beauty",
+            "fragrances",
+            "furniture",
+            "groceries",
+            "home-decoration",
+            "kitchen-accessories",
+            "laptops",
+            "mens-shirts",
+            "mens-shoes",
+            "mens-watches",
+            "mobile-accessories",
+            "motorcycle",
+            "skin-care",
+            "smartphones",
+            "sports-accessories",
+            "sunglasses",
+            "tablets",
+            "tops",
+            "vehicle",
+            "womens-bags",
+            "womens-dresses",
+            "womens-jewellery",
+            "womens-shoes",
+            "womens-watches"
+          ],
+          "depth": 2
+        }
+      ]
+    },
+    {
+      "component": "div",
+      "class": "d-flex",
+      "children": [
+        {
+          "name": "price",
+          "label": "Price",
+          "type": "currency",
+          "config": {
+            "grid": true,
+            "sort": 1
+          },
+          "depth": 2
+        },
+        {
+          "name": "stock",
+          "label": "Stock",
+          "type": "currency",
+          "config": {
+            "grid": true,
+            "sort": 1
+          },
+          "depth": 2
+        },
+        {
+          "name": "minimumOrderQuantity",
+          "label": "Min Quantity",  
+          "depth": 2
+        }
+      ]
+    },
+    {
+      "name": "dimensions",
+      "type": "object",
+      "options": [
+        {
+          "component": "div",
+          "class": "d-flex",
+          "children": [
+            {
+              "name": "width",
+              "label": "Width",
+              "depth": 2
+            },
+            {
+              "name": "height",
+              "label": "Height",
+              "depth": 2
+            },
+            {
+              "name": "depth",
+              "label": "Depth",
+              "depth": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "description",
+      "label": "Description",
+      "type": "wysiwyg"
+    }
+  ],
+  "api": {
+    "rootApi": "https://dummyjson.com/products",
+    "wrapData": "products",
+    "totalData": "total",
+    "pagination": {
+      "pageField": "skip",
+      "limitField": "limit",
+      "sortField": "order",
+      "sortExp": "{sort}",
+      "filterField": "filter",
+      "filterExp": "{prop},like,%{value}%"
+    },
+    "params": { 
+      "limit": 15,
+      "order": "desc"
+    },
+    "headers": {
+      "Accept": "application/json"
+    }
+  }
+}
