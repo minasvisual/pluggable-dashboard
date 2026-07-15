@@ -1,0 +1,19 @@
+schema: spec-driven
+
+context: |
+  Tech Stack:
+    - Frontend Framework: Vue 2.6.11 (Options API)
+    - State Management: Vuex 3
+    - Routing: Vue Router 3
+    - UI Components: CoreUI 3 (Vue)
+    - Forms: Vue Formulate 2.5 + vue-formulate-extended
+    - HTTP: Axios with axios-cache-adapter (1h cache, disabled in local env)
+    - Styling: SCSS
+  Architecture & Conventions:
+    - No-code admin dashboard powered by JSON configurations.
+    - Projects config defined in JSON pointing to external REST APIs.
+    - Resources and CRUD screens dynamically generated from JSON schemas.
+    - Mixins located in `src/services/` for shared logic.
+    - Local serverless API functions located in `api/`.
+    - No TypeScript (plain JavaScript).
+
