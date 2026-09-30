@@ -1,6 +1,6 @@
 ![Screenshot](logo.png)
 
-# Under Construction. Collaborate! deplo
+# Under Construction. Collaborate!
 
 ## Plugable Dashboard Api
 
