@@ -1,29 +1,48 @@
 import express from 'express';
-import { getDatabase } from './lib/db.js';
+import { getDatabase, getTenantEnv } from './lib/db.js';
+import { verifyJwt } from './lib/jwt.js';
+
+const ALLOWED_USER_TYPES = ['admin', 'master'];
 
 const app = express();
 app.use(express.json());
 
-// Auth middleware enforcing x-internal-secret
+// Tenant comes from the `x-tenant` header (or `tenant` query param).
+// Validates the JWT with <TENANT>_API_SECRET and requires user_type admin|master.
 app.use((req, res, next) => {
-  const secret = req.headers['x-internal-secret'];
-  if (!secret || secret !== process.env.API_SECRET) {
+  const tenant = req.headers['x-tenant'] || req.query.tenant;
+  const secret = getTenantEnv(tenant, 'API_SECRET');
+  if (!secret) return res.status(400).json({ error: 'Unknown or missing tenant' });
+
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.headers['access-token'];
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+
+  try {
+    const payload = verifyJwt(token, secret);
+    if (!ALLOWED_USER_TYPES.includes(payload.user_type)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    req.user = payload;
+    req.tenant = tenant;
+  } catch (e) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
 });
 
-// Helper to ensure database is synced
-async function ensureDb() {
-  const { sequelize, Model } = getDatabase();
-  await sequelize.sync();
-  return Model;
+// Helper to ensure the tenant database is synced
+async function ensureDb(req) {
+  const db = getDatabase(req.tenant);
+  if (!db) throw new Error('Database not configured for tenant');
+  await db.sequelize.sync();
+  return db.Model;
 }
 
 // GET - List all or find by id
 app.get('/api/models', async (req, res) => {
   try {
-    const Model = await ensureDb();
+    const Model = await ensureDb(req);
     const id = req.query.id;
     if (id) {
       const item = await Model.findByPk(id);
@@ -39,7 +58,7 @@ app.get('/api/models', async (req, res) => {
 
 app.get('/api/models/:id', async (req, res) => {
   try {
-    const Model = await ensureDb();
+    const Model = await ensureDb(req);
     const item = await Model.findByPk(req.params.id);
     if (!item) return res.status(404).json({ error: 'Model not found' });
     res.status(200).json(item);
@@ -51,7 +70,7 @@ app.get('/api/models/:id', async (req, res) => {
 // POST - Create
 app.post('/api/models', async (req, res) => {
   try {
-    const Model = await ensureDb();
+    const Model = await ensureDb(req);
     const { name, domain, content } = req.body;
     if (!name || !domain) {
       return res.status(400).json({ error: 'Name and Domain are required' });
@@ -66,7 +85,7 @@ app.post('/api/models', async (req, res) => {
 // PUT - Update
 const handleUpdate = async (req, res) => {
   try {
-    const Model = await ensureDb();
+    const Model = await ensureDb(req);
     const id = req.params.id || req.query.id || req.body.id;
     if (!id) return res.status(400).json({ error: 'ID is required' });
     
@@ -91,7 +110,7 @@ app.put('/api/models/:id', handleUpdate);
 // DELETE - Delete
 const handleDelete = async (req, res) => {
   try {
-    const Model = await ensureDb();
+    const Model = await ensureDb(req);
     const id = req.params.id || req.query.id || req.body.id;
     if (!id) return res.status(400).json({ error: 'ID is required' });
 
