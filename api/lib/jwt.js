@@ -2,6 +2,13 @@ import crypto from 'crypto';
 
 const b64urlJson = (s) => JSON.parse(Buffer.from(s, 'base64url').toString('utf8'));
 
+// Reads the payload WITHOUT verifying it. Only use it to pick which secret to verify with.
+export function decodeJwt(token) {
+  const parts = String(token || '').split('.');
+  if (parts.length !== 3) throw new Error('Malformed token');
+  return b64urlJson(parts[1]);
+}
+
 // Verifies an HS256 JWT (signature + exp/nbf). Returns the payload or throws.
 export function verifyJwt(token, secret) {
   const parts = String(token || '').split('.');

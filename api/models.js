@@ -1,30 +1,31 @@
 import express from 'express';
 import { getDatabase, getTenantEnv } from './lib/db.js';
-import { verifyJwt } from './lib/jwt.js';
+import { decodeJwt, verifyJwt } from './lib/jwt.js';
 
 const ALLOWED_USER_TYPES = ['admin', 'master'];
 
 const app = express();
 app.use(express.json());
 
-// Tenant comes from the `x-tenant` header (or `tenant` query param).
+// Tenant comes from the JWT's `tenante` claim.
 // Validates the JWT with <TENANT>_API_SECRET and requires user_type admin|master.
 app.use((req, res, next) => {
-  const tenant = req.headers['x-tenant'] || req.query.tenant;
-  const secret = getTenantEnv(tenant, 'API_SECRET');
-  if (!secret) return res.status(400).json({ error: 'Unknown or missing tenant' });
-
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.headers['access-token'];
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
+    // the claim only selects the secret; the signature check below is what authenticates it
+    const tenant = decodeJwt(token).tenante;
+    const secret = getTenantEnv(tenant, 'API_SECRET');
+    if (!secret) return res.status(401).json({ error: 'Unauthorized' });
+
     const payload = verifyJwt(token, secret);
     if (!ALLOWED_USER_TYPES.includes(payload.user_type)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
     req.user = payload;
-    req.tenant = tenant;
+    req.tenant = payload.tenante;
   } catch (e) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
