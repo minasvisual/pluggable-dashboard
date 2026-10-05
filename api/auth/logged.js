@@ -1,4 +1,4 @@
-import { rejected, forward } from '../server/lib/bff.js'
+import { rejected, forward } from '../../server/lib/bff.js'
 
 // GET /api/auth/logged -> GET {upstream}/auth/logged
 // The user token is sent in the `access-token` header (same as the upstream API)
