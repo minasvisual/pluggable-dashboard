@@ -3,7 +3,7 @@
   "outputDirectory": "dist",
   "framework": "vue",
   "functions": {
-    "api/**/*.js": { "includeFiles": "server/entities/**" }
+    "api/**/*.js": { "includeFiles": "server/**" }
   },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
