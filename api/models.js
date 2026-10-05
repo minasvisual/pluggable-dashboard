@@ -12,15 +12,18 @@ app.use(express.json());
 app.use((req, res, next) => {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.headers['access-token'];
+  console.log(`[use] Token received: ${token.at(0)}...${token.slice(-4)}`); // Log only the first and last 4 characters for security
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
   try {
     // the claim only selects the secret; the signature check below is what authenticates it
     const tenant = decodeJwt(token).tenante;
     const secret = getTenantEnv(tenant, 'API_SECRET');
+    console.log(`[use] Tenant: ${tenant}, Secret: ${secret ? secret.slice(-4) : 'Not found'}`); // Log whether the secret was found, but not the secret itself
     if (!secret) return res.status(401).json({ error: 'Unauthorized' });
 
     const payload = verifyJwt(token, secret);
+    console.log(`[use] Payload: ${JSON.stringify(payload)}`); // Log the payload for debugging
     if (!ALLOWED_USER_TYPES.includes(payload.user_type)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
