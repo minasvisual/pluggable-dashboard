@@ -18,9 +18,9 @@ export function getTenantEnv(tenant, suffix) {
   return key ? process.env[`${key}_${suffix}`] : undefined;
 }
 
-const entitiesDir = tenant => path.join(process.cwd(), 'api', 'entities', tenant);
+const entitiesDir = tenant => path.join(process.cwd(), 'server', 'entities', tenant);
 
-// api/entities/<tenant>/<Model>.js -> { lowercaseName: fileName }
+// server/entities/<tenant>/<Model>.js -> { lowercaseName: fileName }
 function listEntities(tenant) {
   try {
     const names = fs.readdirSync(entitiesDir(tenant)).filter(f => f.endsWith('.js')).map(f => f.slice(0, -3));
@@ -60,7 +60,7 @@ function loadEntity(db, tenant, name, files, pending) {
 }
 
 // One connection per tenant, read from <TENANT>_DATABASE_URL. Returns null when not configured.
-// With `modelName`, the entity from api/entities/<tenant>/ (plus its related models) is loaded
+// With `modelName`, the entity from server/entities/<tenant>/ (plus its related models) is loaded
 // on demand and returned as `db.Model`; otherwise `db.Model` is the generic "models" table.
 export function getDatabase(tenant, modelName) {
   const key = tenantKey(tenant);

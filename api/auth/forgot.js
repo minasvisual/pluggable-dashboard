@@ -1,4 +1,4 @@
-import { rejected, forward } from '../lib/bff.js'
+import { rejected, forward } from '../server/lib/bff.js'
 
 // POST /api/auth/forgot -> POST {upstream}/auth/forgot
 export default async function handler(req, res) {

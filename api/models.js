@@ -1,6 +1,6 @@
 import express from 'express';
-import { getDatabase, getTenantEnv } from './lib/db.js';
-import { decodeJwt, verifyJwt } from './lib/jwt.js';
+import { getDatabase, getTenantEnv } from '../server/lib/db.js';
+import { decodeJwt, verifyJwt } from '../server/lib/jwt.js';
 
 const ALLOWED_USER_TYPES = ['admin', 'master'];
 
