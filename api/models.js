@@ -38,7 +38,12 @@ app.use((req, res, next) => {
 // Helper to ensure the tenant database is synced
 async function ensureDb(req, modelName) {
   const db = getDatabase(req.tenant, modelName);
-  if (!db) throw new Error(modelName ? `Model "${modelName}" not found for tenant` : 'Database not configured for tenant');
+  if (!db) {
+    // unknown model: fail before any query reaches the database
+    const err = new Error(modelName ? `Model "${modelName}" not found for tenant` : 'Database not configured for tenant');
+    err.status = modelName ? 404 : 500;
+    throw err;
+  }
   // await db.sequelize.sync();
   return db.Model;
 }
@@ -77,7 +82,7 @@ app.get('/api/models/:model', async (req, res) => {
     });
     res.status(200).json(items);
   } catch (error) {
-    res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message });
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 
@@ -88,7 +93,7 @@ app.get('/api/models/:model/:id', async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.status(200).json(item);
   } catch (error) {
-    res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message });
+    res.status(error.status || 500).json({ error: error.message });
   }
 });
 
