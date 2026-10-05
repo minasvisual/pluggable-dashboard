@@ -253,7 +253,7 @@ const calculatePage = ({query = {}}) => {
 }
 
 
-module.exports = ({app}) => {
+export const queryparser = ({app}) => {
   
   const convert = ({ query, basedProperties = [], symbolic = false }) => {
     if (typeof query !== 'object') {

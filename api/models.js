@@ -1,10 +1,12 @@
 import express from 'express';
 import { getDatabase, getTenantEnv } from '../server/lib/db.js';
 import { decodeJwt, verifyJwt } from '../server/lib/jwt.js';
+import { queryparser } from '../server/lib/queryparser.js';
 
 const ALLOWED_USER_TYPES = ['admin', 'master'];
 
 const app = express();
+const qr = queryparser({ app });
 app.use(express.json());
 
 // Tenant comes from the JWT's `tenante` claim.
@@ -70,16 +72,16 @@ app.get('/api/models', async (req, res) => {
 app.get('/api/models/:model', async (req, res) => {
   try {
     const Model = await ensureDb(req, req.params.model);
-    const { id, limit, offset } = req.query;
+    const { id} = req.query;
     if (id) {
       const item = await Model.findByPk(id);
       if (!item) return res.status(404).json({ error: 'Not found' });
       return res.status(200).json(item);
     }
-    const items = await Model.findAll({
-      limit: Math.min(parseInt(limit, 10) || 50, 500),
-      offset: parseInt(offset, 10) || 0
-    });
+    const criteria = qr.convert({ query: req.query }); 
+    const items = await Model.findAndCountAll(criteria)
+    .then((result) => qr.pagination(result, req.query))
+
     res.status(200).json(items);
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
