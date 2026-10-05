@@ -6,6 +6,7 @@
     "api/**/*.js": { "includeFiles": "server/**" }
   },
   "rewrites": [
+    { "source": "/api/models/(.*)", "destination": "/api/models" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

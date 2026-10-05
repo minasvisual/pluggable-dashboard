@@ -12,8 +12,8 @@ app.use(express.json());
 app.use((req, res, next) => {
   const auth = req.headers.authorization || '';
   const token = auth.startsWith('Bearer ') ? auth.slice(7) : req.headers['access-token'];
-  console.log(`[use] Token received: ${token.at(0)}...${token.slice(-4)}`); // Log only the first and last 4 characters for security
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  console.log(`[use] Token received: ${token.at(0)}...${token.slice(-4)}`); // Log only the first and last 4 characters for security
 
   try {
     // the claim only selects the secret; the signature check below is what authenticates it
