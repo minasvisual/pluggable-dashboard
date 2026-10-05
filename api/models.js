@@ -62,6 +62,7 @@ app.get('/api/models', async (req, res) => {
 
 app.get('/api/models/:id', async (req, res) => {
   try {
+    console.log(`[models/:id] Payload: ${JSON.stringify(req)}`); // Log the payload for debugging
     const Model = await ensureDb(req);
     const item = await Model.findByPk(req.params.id);
     if (!item) return res.status(404).json({ error: 'Model not found' });

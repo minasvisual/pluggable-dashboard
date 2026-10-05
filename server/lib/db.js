@@ -64,10 +64,13 @@ function loadEntity(db, tenant, name, files, pending) {
 // on demand and returned as `db.Model`; otherwise `db.Model` is the generic "models" table.
 export function getDatabase(tenant, modelName) {
   const key = tenantKey(tenant);
+  console.log(`[getDatabase] Tenant: ${tenant}, Key: ${key}, Model: ${modelName}`); // Log the tenant, key, and model name for debugging
   if (!key) return null;
 
   let db = tenants.get(key);
-  if (!db) {
+  console.log(`[getDatabase] db`, db);
+  if (!db) {const key = tenantKey(tenant);
+    console.log(`[getDatabase] db not found for tenant: ${tenant}, key: ${key}`); // Log when the database is not found for the tenant
     const dbUrl = process.env[`${key}_DATABASE_URL`];
     if (!dbUrl) return null;
 
