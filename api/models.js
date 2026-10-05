@@ -36,10 +36,10 @@ app.use((req, res, next) => {
 });
 
 // Helper to ensure the tenant database is synced
-async function ensureDb(req) {
-  const db = getDatabase(req.tenant);
-  if (!db) throw new Error('Database not configured for tenant');
-  await db.sequelize.sync();
+async function ensureDb(req, modelName) {
+  const db = getDatabase(req.tenant, modelName);
+  if (!db) throw new Error(modelName ? `Model "${modelName}" not found for tenant` : 'Database not configured for tenant');
+  // await db.sequelize.sync();
   return db.Model;
 }
 
@@ -60,15 +60,35 @@ app.get('/api/models', async (req, res) => {
   }
 });
 
-app.get('/api/models/:id', async (req, res) => {
+// Entity routes: /api/models/:model (list) and /api/models/:model/:id (one),
+// where :model is an entity from server/entities/<tenant>/ (e.g. EtsArtists)
+app.get('/api/models/:model', async (req, res) => {
   try {
-    console.log(`[models/:id] Payload: ${JSON.stringify(req)}`); // Log the payload for debugging
-    const Model = await ensureDb(req);
+    const Model = await ensureDb(req, req.params.model);
+    const { id, limit, offset } = req.query;
+    if (id) {
+      const item = await Model.findByPk(id);
+      if (!item) return res.status(404).json({ error: 'Not found' });
+      return res.status(200).json(item);
+    }
+    const items = await Model.findAll({
+      limit: Math.min(parseInt(limit, 10) || 50, 500),
+      offset: parseInt(offset, 10) || 0
+    });
+    res.status(200).json(items);
+  } catch (error) {
+    res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message });
+  }
+});
+
+app.get('/api/models/:model/:id', async (req, res) => {
+  try {
+    const Model = await ensureDb(req, req.params.model);
     const item = await Model.findByPk(req.params.id);
-    if (!item) return res.status(404).json({ error: 'Model not found' });
+    if (!item) return res.status(404).json({ error: 'Not found' });
     res.status(200).json(item);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(error.message.includes('not found') ? 404 : 500).json({ error: error.message });
   }
 });
 
