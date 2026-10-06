@@ -112,9 +112,10 @@ export default {
         console.debug('checkLogged failed: token', e)
         this.$message( getErrorMessage(e) )
         this.login = false;
-        return this.$emit('auth:failed', {message: e.message})
+        this.$emit('auth:failed', {message: e.message})
+        return null
       }
-    }, 
+    },
     logout(){
       console.debug("called auth logout")
       this.loading = true;
@@ -132,33 +133,43 @@ export default {
       this.schema.api = merge(get(this.currentProject, 'api', {}), this.schema.api)
 
       console.debug('caled mounted auth')
-      if( !this.hasAuth ) return this.login = true 
+
+      // no project/schema auth configured: the global (dash) login, handled by App.vue, is enough
+      if( !this.hasAuth ) return this.login = true
 
       console.debug('auth process start')
       let token = sessionStorage.getItem(`${this.schema.session || this.project.code}_session`)
       console.debug('token session', token)
 
-      this.loading = true;
-      if( token && get(this.session, 'logged', false) ){
-        this.$emit('auth:logged', {token, user: get(this.session, 'user', {}), request: this.authRequest(token) })
-        
-        console.debug('token and user exists', this.authRequest(token), this.session)
-        this.schema.api = Object.assign(this.schema.api, this.authRequest(token))
-        this.loading = false;
-        this.login = true;
-      }else if( token ){
-        let { request={}, ...data } = await this.checkLogged(token)
-
-        console.debug('token exists relogin', request, data)
-        this.schema.api = Object.assign(this.schema.api, request)
-        
-        this.loading = false;
-        this.login = true;
-      }else{
+      if( !token ){
         this.loading = false;
         this.login = false;
-        console.debug('show login form')
-      } 
+        return console.debug('show login form')
+      }
+
+      // project auth configured: validate the token against auth.logged_url
+      this.loading = true;
+      if( has(this.config, 'logged_url') ){
+        let auth = await this.checkLogged(token)
+
+        if( !auth ){
+          // token rejected or expired: drop it and ask for credentials again
+          this.doLogout()
+          this.loading = false;
+          this.login = false;
+          return
+        }
+
+        this.schema.api = Object.assign(this.schema.api, auth.request)
+      }else{
+        // nothing to validate against, trust the stored token
+        let request = this.authRequest(token)
+        this.$emit('auth:logged', { token, user: get(this.session, 'user', {}), request })
+        this.schema.api = Object.assign(this.schema.api, request)
+      }
+
+      this.loading = false;
+      this.login = true;
     }catch(e){
       this.login = false;
       this.loading = false;
