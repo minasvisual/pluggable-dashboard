@@ -32,6 +32,7 @@ app.use((req, res, next) => {
     req.user = payload;
     req.tenant = payload.tenante;
   } catch (e) {
+    console.error(`[use] JWT verification failed: ${e.message}`, e); // Log the error message for debugging
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
