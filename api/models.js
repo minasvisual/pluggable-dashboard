@@ -71,13 +71,7 @@ app.get('/api/models', async (req, res) => {
 // where :model is an entity from server/entities/<tenant>/ (e.g. EtsArtists)
 app.get('/api/models/:model', async (req, res) => {
   try {
-    const Model = await ensureDb(req, req.params.model);
-    const { id} = req.query;
-    if (id) {
-      const item = await Model.findByPk(id);
-      if (!item) return res.status(404).json({ error: 'Not found' });
-      return res.status(200).json(item);
-    }
+    const Model = await ensureDb(req, req.params.model); 
     const criteria = qr.convert({ query: req.query }); 
     const items = await Model.findAndCountAll(criteria)
     .then((result) => qr.pagination(result, req.query))
