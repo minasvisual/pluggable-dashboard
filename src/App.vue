@@ -23,7 +23,8 @@ export default {
     })
   },
   beforeMount(){
-    this.isLogged() 
+    // global session check only exists when the dashboard login is enabled
+    if( this.hasAuth ) this.isLogged()
   }
 }
 </script>

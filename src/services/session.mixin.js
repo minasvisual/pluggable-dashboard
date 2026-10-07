@@ -24,6 +24,11 @@ export default {
     }
   },
   methods: {
+    // GUARDRAIL: store.auth.dash is the global session, a project can never use that key
+    assertProjectSession(){
+      if( get(this.currentProject, 'code') === 'dash' || get(this.project, 'code') === 'dash' )
+        throw new Error('Project code "dash" is reserved for the global session')
+    },
     async loadProjects(refresh = false){
       return loadProjects({ cache:{ ignoreCache: refresh }})
           .then( (data) => {
@@ -41,6 +46,7 @@ export default {
     },
     authenticate({username, secret, remember}){
       try{
+        this.assertProjectSession()
         if( !has(this.config, 'url_login') ) return new Error('url login doest exist');
 
         return request(this.resolveUrl(this.config.url_login), {
@@ -54,7 +60,7 @@ export default {
                         //{
                           //[get(this.config, 'request_token', 'access-token')]: ''
                         //}
-                      }, { wrap: false } )
+                      }, { wrap: false, session: false } )
                 .then((res) => {
                   let token = this.storageToken(res)
                   let reqAuthData = this.authRequest(token)
@@ -83,7 +89,7 @@ export default {
     },
     isLogged(token){
       try{
-        
+        this.assertProjectSession()
         if( !has(this.config, 'logged_url') ){
           return Promise.reject({message: 'Logged url not found'})
         }
@@ -142,6 +148,7 @@ export default {
       return `${base.replace(/\/+$/, '')}/${url.replace(/^\/+/, '')}`
     },
     doLogout(){
+      this.assertProjectSession()
       sessionStorage.removeItem(`${this.currentProject.code}_session`)
       
       this.$store.commit('setAuth', [ this.currentProject.code, {  logged: false }])

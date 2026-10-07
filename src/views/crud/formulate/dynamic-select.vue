@@ -17,7 +17,7 @@
 
 <script>
 import { get } from 'lodash'
-import { request } from '../../../services/models'
+import { request, sessionFor } from '../../../services/models'
 import { interpolate } from '../../../services/helpers'
 export default {
   props: {
@@ -71,7 +71,7 @@ export default {
           this.loading = true;
           requestOptions = Object.assign(requestOptions, this.request)
           let urlNew = interpolate(url, { data: this.context.model })
-          let data = await request( urlNew, { method:'get', ...requestOptions })
+          let data = await request( urlNew, { method:'get', ...requestOptions }, { session: sessionFor() })
 
           if( wrapData )
             data = get(data, wrapData, data)

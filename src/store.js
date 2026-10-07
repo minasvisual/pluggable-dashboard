@@ -91,15 +91,15 @@ const actions = {
       return getUserData({ method: 'get', ...headers })
           .then( data => {
               ctx.commit('setAuth', ['dash', {isLogged: true, token, user: data }])
-              if( !window.location.includes('dashboard') ) Router.push('/dashboard')
+              if( !window.location.href.includes('dashboard') ) Router.push('/dashboard')
               return data
           })
           .catch(({response, message }) => {
             
-            if( response && response.status > 400 && response.status < 410 )
+            if( response && [401, 403].includes(response.status) )
               ctx.dispatch('logout')
 
-            return { message, status }
+            return { message, status: get(response, 'status') }
           })
     }else{
       
@@ -117,21 +117,20 @@ const actions = {
     ctx.commit('setAuth', ['dash', auth]) 
     Router.push('/pages/login')
   },
+  // GUARDRAIL: a failed schema/project request can only change that project's session.
+  // The global session ends only by the explicit `logout` action or by `isLogged` (global check),
+  // so a 401 on a use_system_auth schema (which borrows the global token) never expires it.
   requestFail(ctx, { response }){
     let current = ctx.state.currentProject || {}
-    console.log('request fail', response)
-    if( get(response, 'config.url', '').includes(current.url) ){
-      console.log(current)
-      if( response.status == get(current, 'auth.request_expiration_status') || response.data.includes("expired") )
-        ctx.dispatch('setAuth', [ current.code, {logged: false} ])
-      else if( get(current, 'auth.use_system_auth') ){
-        ctx.dispatch('logout')
-      }
-    }
-    else if( get(response, 'config.url', '').includes( process.env.VUE_APP_LOGGED_URL ) ){
-      ctx.dispatch('logout', { logged: false })
-    }
+    let url = get(response, 'config.url', '') || ''
+    if( !response || !current.url || !current.code || !url.includes(current.url) ) return
+    // the global session check is not a project request
+    if( process.env.VUE_APP_LOGGED_URL && url.startsWith(process.env.VUE_APP_LOGGED_URL) ) return
 
+    if( response.status == get(current, 'auth.request_expiration_status') || String(response.data).includes("expired") ){
+      if( !get(current, 'auth.use_system_auth') )
+        ctx.commit('setAuth', [ current.code, {logged: false} ])
+    }
   },
   notification: (context, {title='Pluggable Dash', body, click}) => {
     // Let's check if the browser supports notifications

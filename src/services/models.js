@@ -1,4 +1,4 @@
-import { get, set, has, isNil, isEmpty, capitalize } from 'lodash'
+import { get, has, isNil, isEmpty, capitalize } from 'lodash'
 import { setup } from 'axios-cache-adapter'
 import { interpolate, queryString } from './helpers'
 import Store from '../store'
@@ -82,15 +82,38 @@ export const getAuthHeaders = (project, token) => {
   
 }
 
+// The global (dash) session lives in localStorage; project/schema sessions live in sessionStorage
+const GLOBAL_SESSION_KEY = 'dash_session'
+const globalHeaderName = () => process.env.VUE_APP_LOGIN_TOKEN_HEADER || 'access-token'
+
+// GUARDRAIL: the global (dash) session is owned only by the store actions login/isLogged/logout.
+// Schema/project sessions never touch it, they just decide which token a request carries:
+//   false    -> the request must NOT carry the global token (schema with its own auth)
+//   'system' -> schema with use_system_auth: the global token always wins, but it is only borrowed
+//   undefined-> legacy: global token is sent unless the request already carries its own token
+export const sessionFor = (model = {}) => {
+  if( model.auth === false ) return false
+
+  let project = Store.state.currentProject || {}
+  let systemAuth = get(model, 'use_system_auth', get(model, 'auth.use_system_auth', get(project, 'auth.use_system_auth', false)))
+  if( systemAuth ) return 'system'
+
+  // schema/project has its own login: never leak the global token to it
+  if( has(project, 'auth') || get(model, 'auth') ) return false
+}
+
 export const request = (query, options={}, config = {}) => {
   let { wrap=true, session } = config
-  
+  // never mutate the caller's options: options.headers is often the schema's own api.headers
+  options = { ...options, headers: { ...options.headers } }
+
   if( session !== false && process.env.VUE_APP_LOGIN == 'true' ){
-    const token = localStorage.getItem('dash_session')
-    let headerName = ( process.env.VUE_APP_LOGIN_TOKEN_HEADER || 'access-token')
-    if ( !has(options, `headers[${headerName}]`) && token ) { 
+    const token = localStorage.getItem(GLOBAL_SESSION_KEY)
+    let headerName = globalHeaderName()
+    let hasOwnToken = has(options.headers, [headerName]) || has(options, ['params', headerName])
+    if ( token && (session === 'system' || !hasOwnToken) ) {
       let headerValue = interpolate(( process.env.VUE_APP_LOGIN_TOKEN_HEADER_EXPRESSION || '{token}'), {token})
-      set(options, `headers[${headerName}]`, headerValue);
+      options.headers[headerName] = headerValue
     }
   }
 
@@ -101,7 +124,7 @@ export const request = (query, options={}, config = {}) => {
 }
 
 export const loadModel = async (url, options) => {
-   return await request(url, options).then( res => {
+   return await request(url, options, { session: sessionFor() }).then( res => {
       console.log("loadModel "+url, res)
       if( !res.api ) throw { message: "Model Load error" }
 
@@ -126,7 +149,7 @@ export const getData = async (model, data={}, config={}) => {
     ...config
   } 
   let sessionConfig = {
-    session: model.auth 
+    session: sessionFor(model) 
   }
 
   let query = queryString(api.params, ( api.rootApi.includes('?') ? '&':'?'), data)
@@ -174,7 +197,7 @@ export const getDataObject = async (model, data={}, config={}) => {
     ...config
   } 
   let sessionConfig = {
-    session: model.auth
+    session: sessionFor(model)
   }
 
   let query = queryString(api.params, ( api.rootApi.includes('?') ? '&':'?'), data)
@@ -207,7 +230,7 @@ export const saveData = async (model, data, config={}) => {
     { ...data, data: resource }
   )
   let sessionConfig = {
-    session: model.auth
+    session: sessionFor(model)
   }
  
   if( has(data, primaryKey) )
@@ -238,7 +261,7 @@ export const deleteData = async (model, data, config={}) => {
   if( !has(data, primaryKey) ) return Promise.reject('Id not found')
 
   let sessionConfig = {
-    session: model.auth
+    session: sessionFor(model)
   }
   
   let method = ( isNil(api.methodDelete) ? "DELETE":api.methodDelete )

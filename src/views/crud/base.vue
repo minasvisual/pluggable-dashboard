@@ -163,8 +163,7 @@ export default {
       return request
     }, 
     logout(){
-      return this.doLogout().then(function(){
-        this.logged = false
+      return this.doLogout().then(() => {
         this.forceRerender()
       })
     }
