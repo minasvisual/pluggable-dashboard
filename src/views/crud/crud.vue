@@ -56,6 +56,7 @@ import ControllerMixin from '../../services/controller.mixin'
 import SessionMixin from '../../services/session.mixin'
 import ActionsMixin from '../../services/actions.mixin'
 
+import { getErrorMessage } from '../../services/helpers'
 import Table from './table'
 import Forms  from './formulate'
 export default {
@@ -137,6 +138,7 @@ export default {
           })
       }catch(err){
         console.debug('Form submit error', err)
+        this.$message(getErrorMessage(err), 'danger')
       }
     },
     loadActions(){

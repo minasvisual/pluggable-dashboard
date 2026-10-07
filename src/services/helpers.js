@@ -151,23 +151,51 @@ export const queryString = (params, join, data) => {
     return rtn
 }
 
+// query params that belong to the list request only (page, limit, sort, filter)
+export const listParamKeys = (pagination = {}) => {
+    const keys = ['pageField', 'limitField', 'sortField'].map(f => pagination[f]).filter(Boolean)
+    const filterField = pagination.filterField
+    // filterField may be a template like "filter[{prop}]": match every interpolated key
+    const filterRe = filterField
+        ? new RegExp('^' + filterField.split(/\{[^}]*}/).map(part => part.replace(/[.*+?^$()|[\]\\]/g, '\\$&')).join('.*') + '$')
+        : null
+    return { keys, filterRe }
+}
+
+// params for single record requests (get by id, save, delete): without the list state
+export const itemParams = (api) => {
+    let { params = {}, pagination = {} } = api || {}
+    const { keys, filterRe } = listParamKeys(pagination)
+    return Object.keys(params).reduce((acc, k) => {
+        if( !keys.includes(k) && !(filterRe && filterRe.test(k)) ) acc[k] = params[k]
+        return acc
+    }, {})
+}
+
 export const filterParams = (api, queryInfo) => { 
     let { page, pageSize, sort, filters } = queryInfo || {}
-    let { params = {}, pagination = {} } = api || {}
+    let { pagination = {} } = api || {}
+    // never mutate the previous params: the schema is shared by the list and the record requests
+    let params = { ...(get(api, 'params') || {}) }
     if( !isNil(page) && has(pagination, 'pageField') )
         params[ pagination.pageField || 'page' ] = page
     if( !isNil(pageSize) && has(pagination, 'limitField') )
         params[ pagination.limitField || 'limit'] = pageSize
     if( sort && !isNil(sort.prop) && !isNil(sort.order) && has(pagination, 'sortField') && has(pagination, 'sortExp') ){
-        let pagData = {prop: sort.prop, sort: sort.order == 'ascending'? get(pagination,'sortAscChar','asc'): get(pagination, 'sortDescChar', 'desc')}
+        let dir = sort.order == 'ascending'? get(pagination,'sortAscChar','asc'): get(pagination, 'sortDescChar', 'desc')
+        let pagData = {prop: sort.prop, sort: dir, order: dir}
         params[ pagination.sortField || 'order' ] = interpolate( get(pagination, 'sortExp', '{prop},{order}'), pagData)
     }
 
-    let filterField = interpolate( get(pagination, 'filterField', 'filter'), get(filters, '[0]', {}) )
-    if( has(filters, '[0].prop') && has(filters, '[0].value') && has(pagination, 'filterField') && has(pagination, 'filterExp') )
-        params[ filterField ] = interpolate( (pagination.filterExp || '{prop},like,%{value}%') , filters[0])
-    else if( has(pagination, 'filterField') )
-        delete params[ filterField ]
+    // filters are only touched when the query carries them (page/size changes keep the current filter)
+    if( Array.isArray(filters) && has(pagination, 'filterField') ){
+        const active = filters.find(f => f && !isNil(f.prop) && !isNil(f.value) && f.value !== '')
+        const filterField = interpolate( get(pagination, 'filterField', 'filter'), active || get(filters, '[0]', {}) )
+        if( active && has(pagination, 'filterExp') )
+            params[ filterField ] = interpolate( (pagination.filterExp || '{prop},like,%{value}%') , active)
+        else
+            delete params[ filterField ]
+    }
  
     return {...api, params};
 }

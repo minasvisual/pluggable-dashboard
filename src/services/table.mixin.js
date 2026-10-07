@@ -16,16 +16,21 @@ export default {
         this.queryInfo = { type }
         if( type == 'sort' ){
           this.queryInfo.sort = { prop: data.column, order: data.asc === true ? 'ascending':'descending' }
+          this.queryInfo.page = 1
         }
         if( type == 'filter' ){
           this.queryInfo.filters = Object.keys(data).map((key) => ({ prop: key, value: data[key] }))
+          this.queryInfo.page = 1
         }
         if( type == 'page' ){
           this.queryInfo.page = data
         }
         if( type == 'pageSize' ){
           this.queryInfo.pageSize = data
+          this.queryInfo.page = 1
         }
+        // any change of the result set goes back to the first page
+        if( this.queryInfo.page === 1 && 'currentPage' in this ) this.currentPage = 1
         
         this.fetchData(this.queryInfo)
       },

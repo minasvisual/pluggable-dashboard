@@ -37,7 +37,7 @@
             <div class="col-5 d-flex justify-content-end align-items-center p-0" v-if="hasPageSize">
               <span>Limit: </span>
               <CSelect :options="showPerPage" :value="perPage" class="m-0 ml-2"
-                  @update:value="(num) => fetchQueryInfo('pageSize', num)" />
+                  @update:value="onPageSize" />
             </div>
           </section>
         </template>
@@ -162,6 +162,10 @@ export default {
       this.queryInfo = queryInfo
       this.$emit('fetchData', queryInfo)
     }, 700),
+    onPageSize(num) {
+      this.perPage = Number(num)
+      this.fetchQueryInfo('pageSize', this.perPage)
+    },
     onPageChange(page) {
       this.queryInfo = { type: 'page', page }
       this.$emit('fetchData', this.queryInfo)

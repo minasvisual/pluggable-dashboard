@@ -201,6 +201,62 @@ describe('TableRemote.vue', () => {
     })
   })
 
+  describe('limit / sort / filter / page interplay', () => {
+    it('onPageSize sets perPage (can go down) and requests page 1', () => {
+      const wrapper = mount({ resource: makeResource(5) })
+      wrapper.vm.perPage = 25
+      wrapper.vm.currentPage = 4
+      wrapper.vm.onPageSize('5')
+      expect(wrapper.vm.perPage).toBe(5)
+      expect(wrapper.vm.currentPage).toBe(1)
+      expect(wrapper.vm.queryInfo).toEqual({ type: 'pageSize', pageSize: 5, page: 1 })
+    })
+
+    it('pages are calculated from the chosen limit', () => {
+      const wrapper = mount({ resource: { rows: new Array(25).fill({}), total: 100 } })
+      expect(wrapper.vm.calcPages(wrapper.vm.totals, wrapper.vm.perPage)).toBe(4)
+      wrapper.vm.onPageSize(5)
+      expect(wrapper.vm.calcPages(wrapper.vm.totals, wrapper.vm.perPage)).toBe(20)
+    })
+
+    it('sort goes back to page 1', () => {
+      const wrapper = mount()
+      wrapper.vm.currentPage = 3
+      wrapper.vm.fetchQueryInfo('sort', { column: 'name', asc: true })
+      expect(wrapper.vm.queryInfo.page).toBe(1)
+      expect(wrapper.vm.currentPage).toBe(1)
+    })
+
+    it('filter goes back to page 1', () => {
+      const wrapper = mount()
+      wrapper.vm.currentPage = 3
+      wrapper.vm.fetchQueryInfo('filter', { name: 'Alice' })
+      expect(wrapper.vm.queryInfo.page).toBe(1)
+      expect(wrapper.vm.currentPage).toBe(1)
+    })
+
+    it('debounced fetchData emits the queryInfo (sort)', async () => {
+      const wrapper = mount()
+      wrapper.vm.fetchQueryInfo('sort', { column: 'name', asc: false })
+      // lodash debounce is created at import time, so fake timers do not apply: wait the real 700ms
+      await new Promise(resolve => setTimeout(resolve, 900))
+      const emitted = wrapper.emitted('fetchData')
+      expect(emitted[emitted.length - 1][0]).toMatchObject({ type: 'sort', sort: { prop: 'name', order: 'descending' }, page: 1 })
+    })
+
+    it('validateQueryInfo accepts every query built by the table', () => {
+      const wrapper = mount()
+      wrapper.vm.fetchQueryInfo('filter', { name: 'a' })
+      expect(wrapper.vm.validateQueryInfo(wrapper.vm.queryInfo)).toBe(true)
+      wrapper.vm.fetchQueryInfo('sort', { column: 'name', asc: true })
+      expect(wrapper.vm.validateQueryInfo(wrapper.vm.queryInfo)).toBe(true)
+      wrapper.vm.fetchQueryInfo('pageSize', 15)
+      expect(wrapper.vm.validateQueryInfo(wrapper.vm.queryInfo)).toBe(true)
+      expect(wrapper.vm.validateQueryInfo({ type: 'page', page: 2 })).toBe(true)
+      expect(wrapper.vm.validateQueryInfo({ type: 'nope' })).toBe(false)
+    })
+  })
+
   describe('action events', () => {
     it('onCreate emits actions:create with empty object', () => {
       const wrapper = mount()

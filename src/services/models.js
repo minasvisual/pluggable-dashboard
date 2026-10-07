@@ -1,6 +1,6 @@
 import { get, has, omit, isNil, isEmpty, capitalize } from 'lodash'
 import { setup } from 'axios-cache-adapter'
-import { interpolate, queryString, getAuthMode } from './helpers'
+import { interpolate, queryString, getAuthMode, itemParams } from './helpers'
 import Store from '../store'
 
 // Create `axios-cache-adapter` instance
@@ -160,7 +160,7 @@ export const getData = async (model, data={}, config={}) => {
     session: sessionFor(model) 
   }
 
-  let query = queryString(api.params, ( api.rootApi.includes('?') ? '&':'?'), data)
+  let query = queryString((isRow ? itemParams(api) : api.params), ( api.rootApi.includes('?') ? '&':'?'), data)
 
   if( isRow )
     url = `${api.rootApi}${ isNil(api.urlGetById) ? '/{id}{query}': api.urlGetById }`
@@ -234,7 +234,7 @@ export const saveData = async (model, data, config={}) => {
   let primaryKey = (isNil(model.primaryKey) ? 'id':model.primaryKey)
   let method = data[primaryKey] ? (isNil(api.methodPatch) ? "PUT":api.methodPatch) : (isNil(api.methodPost) ? "POST":api.methodPost);
   let query = interpolate( 
-    queryString(api.params, (api.rootApi.includes('?') ? '&':'?')),  
+    queryString(itemParams(api), (api.rootApi.includes('?') ? '&':'?')),  
     { ...data, data: resource }
   )
   let sessionConfig = {
@@ -274,7 +274,7 @@ export const deleteData = async (model, data, config={}) => {
   
   let method = ( isNil(api.methodDelete) ? "DELETE":api.methodDelete )
   let query = interpolate( 
-    queryString(api.params, (api.rootApi.includes('?') ? '&':'?')),  
+    queryString(itemParams(api), (api.rootApi.includes('?') ? '&':'?')),  
     data
   )
   let url = `${api.rootApi}${ isNil(api.urlDelete) ? '/{id}':api.urlDelete }`

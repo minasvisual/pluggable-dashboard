@@ -103,7 +103,7 @@ export default {
               
           this.$emit('model:saved', data)
         }catch(err){
-          this.$alert('Form submit error', err)
+          this.$message(getErrorMessage(err), 'danger')
         }
         return data
       },
