@@ -56,7 +56,8 @@ async function ensureDb(req, modelName) {
 app.get('/api/models/:model', async (req, res) => {
   try {
     const Model = await ensureDb(req, req.params.model); 
-    const criteria = qr.convert({ query: req.query }); 
+    // symbolic: Sequelize 6+ rejects string operators ('$ne'), it needs Op symbols
+    const criteria = qr.convert({ query: req.query, symbolic: true });
     const items = await Model.findAndCountAll(criteria)
     .then((result) => qr.pagination(result, req.query))
 
@@ -81,7 +82,7 @@ app.get('/api/models/:model/:id', async (req, res) => {
     const Model = await ensureDb(req, req.params.model);
     const PK = getPk(req);
     // keep the query-parser options (attributes, include...) but force the key filter
-    const criteria = { ...qr.convert({ query: req.query }), where: { [PK]: req.params.id } };
+    const criteria = { ...qr.convert({ query: req.query, symbolic: true }), where: { [PK]: req.params.id } };
     const item = await Model.findOne(criteria);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.status(200).json(item);

@@ -17,7 +17,7 @@ const operators = {
   like: true,
   and: (symbolic, value) => {
     return {
-      comparisonOp: symbolic ? Symbol.for('$and') : '$and',
+      comparisonOp: symbolic ? Symbol.for('and') : '$and',
       value: value.split(':')
     }
   },
