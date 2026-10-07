@@ -46,7 +46,7 @@
 <script>
 import { get, debounce } from 'lodash'
 import { getData, loadModel } from '../../../services/models'
-import { filterParams, mergeDeep } from '../../../services/helpers'
+import { filterParams, mergeDeep, queuedRequest } from '../../../services/helpers'
 export default {
   props: {
     context: {
@@ -162,7 +162,10 @@ export default {
           this.loading = true;
           schema.api = mergeDeep(schema.api, this.request)
           schema.api = mergeDeep(schema.api, { resource: this.formValues})
-          let data = await getData( schema, { data: this.search  })
+          let data = await queuedRequest(
+            JSON.stringify([schema, this.search]),
+            () => getData( schema, { data: this.search  })
+          )
 
           this.options = (data.rows || data).map((i, k) => ({ 
               label: get(i, fieldLabel, i.toString()), 

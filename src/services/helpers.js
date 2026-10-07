@@ -255,3 +255,51 @@ export const isRegex = (data, reg, custom=false) => {
     console.debug('isRegex', rgs[reg], data, regex.test(data))
     return regex.test(data)
 } 
+
+/**
+ * Creates a task queue that limits how many async tasks run at once.
+ * concurrency = 1 makes them strictly sequential.
+ */
+export const createQueue = (concurrency = 1) => {
+  let running = 0
+  const pending = []
+
+  const next = () => {
+    if( running >= concurrency || !pending.length ) return
+    const { task, resolve, reject } = pending.shift()
+    running++
+    Promise.resolve()
+      .then(task)
+      .then(resolve, reject)
+      .finally(() => { running--; next() })
+  }
+
+  return (task) => new Promise((resolve, reject) => {
+    pending.push({ task, resolve, reject })
+    next()
+  })
+}
+
+const requestQueue = createQueue(1)
+const requestCache = new Map()
+
+/**
+ * Runs `task` through the shared sequential queue. Calls with the same `key` share
+ * one promise (in flight or resolved) for `ttl` ms. Empty results and errors are not kept.
+ */
+export const queuedRequest = (key, task, ttl = 30000) => {
+  const hit = requestCache.get(key)
+  if( hit && Date.now() - hit.time < ttl ) return hit.promise
+
+  const promise = requestQueue(task)
+  const entry = { promise, time: Date.now() }
+  requestCache.set(key, entry)
+
+  const drop = () => { if( requestCache.get(key) === entry ) requestCache.delete(key) }
+  promise.then(res => {
+    const list = Array.isArray(res) ? res : (res && res.rows)
+    if( !list || !list.length ) drop(); else entry.time = Date.now()
+  }, drop)
+
+  return promise
+}

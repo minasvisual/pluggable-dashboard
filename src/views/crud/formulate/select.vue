@@ -80,7 +80,7 @@
 <script>
 import { get } from 'lodash'
 import { request, getData, loadModel } from '../../../services/models'
-import { interpolate, mergeDeep } from '../../../services/helpers'
+import { interpolate, mergeDeep, queuedRequest } from '../../../services/helpers'
 
 export default {
   name: 'FormulateInputSelect',
@@ -147,7 +147,11 @@ export default {
           this.loading = true;
           data = mergeDeep(data, this.request)
           rootApi = interpolate(rootApi, { data: this.context.model })
-          let { rows } = await getData({ api: { ...data, rootApi, resource: this.formValues } }, { data: this.context.model }) 
+          const schema = { api: { ...data, rootApi, resource: this.formValues } }
+          let { rows } = await queuedRequest(
+            JSON.stringify([schema, this.context.model]),
+            () => getData(schema, { data: this.context.model })
+          )
 
          this.options = rows && rows.map((i, k) => ({ 
               label: get(i, fieldLabel, i.toString()), 
