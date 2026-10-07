@@ -51,23 +51,6 @@ async function ensureDb(req, modelName) {
   return db.Model;
 }
 
-// GET - List all or find by id
-app.get('/api/models', async (req, res) => {
-  try {
-    const Model = await ensureDb(req);
-    const id = req.query.id;
-    if (id) {
-      const item = await Model.findByPk(id);
-      if (!item) return res.status(404).json({ error: 'Model not found' });
-      return res.status(200).json(item);
-    }
-    const items = await Model.findAll();
-    res.status(200).json(items);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Entity routes: /api/models/:model (list) and /api/models/:model/:id (one),
 // where :model is an entity from server/entities/<tenant>/ (e.g. EtsArtists)
 app.get('/api/models/:model', async (req, res) => {
@@ -83,76 +66,66 @@ app.get('/api/models/:model', async (req, res) => {
   }
 });
 
+// Maps errors to a status: explicit status, Sequelize validation/constraint -> 400, else 500
+function sendError(res, error) {
+  const isValidation = ['SequelizeValidationError', 'SequelizeUniqueConstraintError', 'SequelizeForeignKeyConstraintError']
+    .includes(error.name);
+  res.status(error.status || (isValidation ? 400 : 500)).json({ error: error.message });
+}
+
+// The primary key column can be overridden with ?pk=<column> (default "id")
+const getPk = (req) => req.query.pk || 'id';
+
 app.get('/api/models/:model/:id', async (req, res) => {
   try {
     const Model = await ensureDb(req, req.params.model);
-    const item = await Model.findByPk(req.params.id);
+    const PK = getPk(req);
+    // keep the query-parser options (attributes, include...) but force the key filter
+    const criteria = { ...qr.convert({ query: req.query }), where: { [PK]: req.params.id } };
+    const item = await Model.findOne(criteria);
     if (!item) return res.status(404).json({ error: 'Not found' });
     res.status(200).json(item);
   } catch (error) {
-    res.status(error.status || 500).json({ error: error.message });
+    sendError(res, error);
   }
 });
 
-// POST - Create
-app.post('/api/models', async (req, res) => {
+app.post('/api/models/:model', async (req, res) => {
   try {
-    const Model = await ensureDb(req);
-    const { name, domain, content } = req.body;
-    if (!name || !domain) {
-      return res.status(400).json({ error: 'Name and Domain are required' });
-    }
-    const item = await Model.create({ name, domain, content });
+    const Model = await ensureDb(req, req.params.model);
+    const item = await Model.create(req.body);
     res.status(201).json(item);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 });
 
-// PUT - Update
-const handleUpdate = async (req, res) => {
+const updateEntity = async (req, res) => {
   try {
-    const Model = await ensureDb(req);
-    const id = req.params.id || req.query.id || req.body.id;
-    if (!id) return res.status(400).json({ error: 'ID is required' });
-    
-    const item = await Model.findByPk(id);
-    if (!item) return res.status(404).json({ error: 'Model not found' });
-    
-    const { name, domain, content } = req.body;
-    await item.update({
-      name: name !== undefined ? name : item.name,
-      domain: domain !== undefined ? domain : item.domain,
-      content: content !== undefined ? content : item.content
-    });
+    const Model = await ensureDb(req, req.params.model);
+    const where = { [getPk(req)]: req.params.id };
+    const item = await Model.findOne({ where });
+    if (!item) return res.status(404).json({ error: 'Not found' });
+    await item.update(req.body);
     res.status(200).json(item);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
 };
 
-app.put('/api/models', handleUpdate);
-app.put('/api/models/:id', handleUpdate);
+app.put('/api/models/:model/:id', updateEntity);
+app.patch('/api/models/:model/:id', updateEntity);
 
-// DELETE - Delete
-const handleDelete = async (req, res) => {
+app.delete('/api/models/:model/:id', async (req, res) => {
   try {
-    const Model = await ensureDb(req);
-    const id = req.params.id || req.query.id || req.body.id;
-    if (!id) return res.status(400).json({ error: 'ID is required' });
-
-    const item = await Model.findByPk(id);
-    if (!item) return res.status(404).json({ error: 'Model not found' });
-
-    await item.destroy();
+    const Model = await ensureDb(req, req.params.model);
+    const deleted = await Model.destroy({ where: { [getPk(req)]: req.params.id } });
+    if (!deleted) return res.status(404).json({ error: 'Not found' });
     res.status(200).json({ message: 'Deleted successfully' });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    sendError(res, error);
   }
-};
-
-app.delete('/api/models', handleDelete);
-app.delete('/api/models/:id', handleDelete);
+});
 
 // Export default Vercel serverless handler routing requests to Express app
 export default function handler(req, res) {
