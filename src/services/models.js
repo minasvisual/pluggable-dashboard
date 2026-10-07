@@ -1,6 +1,6 @@
-import { get, has, isNil, isEmpty, capitalize } from 'lodash'
+import { get, has, omit, isNil, isEmpty, capitalize } from 'lodash'
 import { setup } from 'axios-cache-adapter'
-import { interpolate, queryString } from './helpers'
+import { interpolate, queryString, getAuthMode } from './helpers'
 import Store from '../store'
 
 // Create `axios-cache-adapter` instance
@@ -94,12 +94,10 @@ const globalHeaderName = () => process.env.VUE_APP_LOGIN_TOKEN_HEADER || 'access
 export const sessionFor = (model = {}) => {
   if( model.auth === false ) return false
 
-  let project = Store.state.currentProject || {}
-  let systemAuth = get(model, 'use_system_auth', get(model, 'auth.use_system_auth', get(project, 'auth.use_system_auth', false)))
-  if( systemAuth ) return 'system'
-
-  // schema/project has its own login: never leak the global token to it
-  if( has(project, 'auth') || get(model, 'auth') ) return false
+  // one auth per schema: inherit the global one (system) or use its own, never both
+  let mode = getAuthMode(model, Store.state.currentProject || {})
+  if( mode === 'system' ) return 'system'
+  if( mode === 'own' ) return false
 }
 
 export const request = (query, options={}, config = {}) => {
@@ -107,9 +105,19 @@ export const request = (query, options={}, config = {}) => {
   // never mutate the caller's options: options.headers is often the schema's own api.headers
   options = { ...options, headers: { ...options.headers } }
 
+  const globalToken = localStorage.getItem(GLOBAL_SESSION_KEY)
+  const headerName = globalHeaderName()
+
+  // GUARDRAIL: a schema with its own auth must never carry the global credentials,
+  // even if they were copied into its headers/params by some other code path
+  if( session === false && globalToken ){
+    const carriesGlobal = (v) => !!v && String(v).includes(globalToken)
+    if( carriesGlobal(options.headers[headerName]) ) delete options.headers[headerName]
+    if( carriesGlobal(get(options, ['params', headerName])) ) options.params = omit(options.params, headerName)
+  }
+
   if( session !== false && process.env.VUE_APP_LOGIN == 'true' ){
-    const token = localStorage.getItem(GLOBAL_SESSION_KEY)
-    let headerName = globalHeaderName()
+    const token = globalToken
     let hasOwnToken = has(options.headers, [headerName]) || has(options, ['params', headerName])
     if ( token && (session === 'system' || !hasOwnToken) ) {
       let headerValue = interpolate(( process.env.VUE_APP_LOGIN_TOKEN_HEADER_EXPRESSION || '{token}'), {token})

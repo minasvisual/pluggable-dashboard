@@ -1,5 +1,5 @@
 import { has, get } from 'lodash'
-import { interpolate, getErrorMessage } from './helpers'
+import { interpolate, getErrorMessage, getAuthMode } from './helpers'
 import { request, loadProjects } from './models' 
 
 export default {
@@ -11,7 +11,7 @@ export default {
       return this.project.auth || null 
     },
     hasAuth() {
-      return (has(this.currentProject, 'auth') || get(this.schema, 'auth')) && !get(this.currentProject, 'auth.use_system_auth', false);
+      return getAuthMode(this.schema, this.currentProject) === 'own'
     },
     showCrud() {
       return (!this.hasAuth || (this.hasAuth && this.logged))

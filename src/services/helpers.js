@@ -2,6 +2,22 @@ import deepmerge from 'deepmerge'
 import { has, sortBy, get, isNil, isObject, omit, isEqual, capitalize } from 'lodash'
 import moment from 'moment'
 
+// Each schema has exactly ONE auth mode (the most specific level wins: schema, then project):
+//   'system' -> inherits the global (dash) auth: use_system_auth = true
+//   'own'    -> has its own auth config (login, sessionStorage token)
+//   'none'   -> no auth config at all
+export const getAuthMode = (schema = {}, project = {}) => {
+  let schemaAuth = get(schema, 'auth')
+  if( schemaAuth === false ) return 'none'
+
+  let flag = get(schema, 'use_system_auth', get(schemaAuth, 'use_system_auth'))
+  if( !isNil(flag) ) return flag ? 'system' : 'own'
+  if( schemaAuth ) return 'own'
+
+  if( has(project, 'auth') ) return get(project, 'auth.use_system_auth', false) ? 'system' : 'own'
+  return 'none'
+}
+
 export const sendType = (cell, row, data) => {
     if( cell?.action?.source == 'cell')
         return cell
