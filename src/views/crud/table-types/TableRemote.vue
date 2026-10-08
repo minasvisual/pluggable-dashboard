@@ -43,7 +43,7 @@
         </template>
 
         <template #selected-header="{item}"> 
-            <CInputCheckbox type="checkbox" inline @update:checked="selectionAll()" style="padding:0; margin:0;" /> 
+            <CInputCheckbox type="checkbox" inline :checked="allSelected()" @update:checked="selectionAll()" style="padding:0; margin:0;" />
         </template>
 
         <template v-for="cell of getCustomFilters(titles)" #[`${cell.key}-filter`]="item" >
@@ -150,6 +150,8 @@ export default {
         const count = get(newVal, 'rows', []).length
         const prevCount = get(oldVal, 'rows', []).length
         if (count > prevCount) this.perPage = count
+        // table was refreshed (reload, page change, delete): drop the stale selection
+        this.selectedRow = []
       }
     }
   },

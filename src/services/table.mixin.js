@@ -58,11 +58,20 @@ export default {
       isSelected(val) {
           return this.selectedRow.findIndex(i => isEqual(i, val) ) >= 0
       },
+      currentRows(){
+          // `grid` is the live list (remote table); `data.rows` is the fallback (local/card tables)
+          const rows = Array.isArray(this.grid) ? this.grid : get(this, 'data.rows', [])
+          return rows || []
+      },
+      allSelected(){
+          const rows = this.currentRows()
+          return rows.length > 0 && rows.every(r => this.isSelected(r))
+      },
       selectionAll(){
-          if( this.selectedRow.length == this.data.rows.length )
+          if( this.allSelected() )
           this.selectedRow = []
           else
-          this.selectedRow = this.data.rows
+          this.selectedRow = [ ...this.currentRows() ]
       },
       selectionChange(val, index) {
           let key = this.selectedRow.findIndex(i => isEqual(i, val) )
