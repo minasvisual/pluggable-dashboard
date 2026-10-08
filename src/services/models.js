@@ -8,9 +8,22 @@ const api = setup({
   maxAge: 1 * ( 60 * 60 ), // N x 1 minute
   ignoreCache: process.env.VUE_APP_ENV === 'local', 
   clearOnStale: true,
+  // The key must carry the headers (auth tokens, app keys): most lists are filtered/paged via query string
+  // and, without it, different sessions would share the same cached response
+  key: (req) => {
+    const headers = req.headers || {}
+    const headerKey = Object.keys(headers).sort().map(k => `${k}=${headers[k]}`).join('&')
+    let params = ''
+    if( req.params ){
+      try { params = '?' + new URLSearchParams(req.params).toString() } catch(e){ params = JSON.stringify(req.params) }
+    }
+    return `${req.baseURL || ''}${req.url}${params}|${headerKey}${req.data ? '|' + req.data : ''}`
+  },
   exclude: {
-    // Only exclude PUT, PATCH and DELETE methods from cache
-    methods: ['put', 'patch', 'delete']
+    // Requests with query string are cached too (the key above includes it)
+    query: false,
+    // Only GET requests are cached
+    methods: ['post', 'put', 'patch', 'delete']
   }
 })
 
